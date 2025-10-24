@@ -11,6 +11,7 @@ import {
   Settings,
   Users,
   Crown,
+  Library,
 } from "lucide-react";
 
 import {
@@ -24,7 +25,6 @@ import {
 import {
   BASE_UNITS,
   BANNERS,
-  RarityWeightsBase,
   STORY_NODES,
   ULTS,
 } from "./game/data";
@@ -46,6 +46,7 @@ import Roster from "./components/Roster";
 import Battle from "./components/Battle";
 import StoryMap from "./components/StoryMap";
 import AnimatedClip from "./components/AnimatedClip";
+import Collection from "./components/Collection";
 
 // ======================== MAIN APP ======================== //
 export default function App() {
@@ -62,10 +63,12 @@ export default function App() {
   const [cinematic, setCinematic] = useState(null);
   const [ultingId, setUltingId] = useState(null);
 
+  // starter unit
   useEffect(() => {
     if (inventory.length === 0) setInventory([pick(BASE_UNITS)]);
   }, []);
 
+  // persistence
   useEffect(() => save("inventory", inventory), [inventory]);
   useEffect(() => save("team", team), [team]);
   useEffect(() => save("banner", bannerId), [bannerId]);
@@ -104,7 +107,7 @@ export default function App() {
     return pulls;
   };
   async function handleSummon() {
-    if (currency < 100) return [];
+    if (currency < 100) return null;
     setCurrency((c) => c - 100);
     const pulls = summonTen();
     setInventory((p) => [...p, ...pulls]);
@@ -208,7 +211,8 @@ export default function App() {
       [...team, ...enemy].forEach(endOfTurn);
 
       if (isWiped(enemy)) {
-        setBattleLog((l) => ["Victory!", ...l]);
+        setBattleLog((l) => ["Victory! (+50 💎)", ...l]);
+        setCurrency((c) => c + 50); // earn from battle
         setInBattle(false);
         return rest;
       }
@@ -264,6 +268,7 @@ export default function App() {
             <NavLink to="/" icon={<Home size={16} />} text="Home" />
             <NavLink to="/summon" icon={<Crown size={16} />} text="Summon" />
             <NavLink to="/roster" icon={<Users size={16} />} text="Roster" />
+            <NavLink to="/collection" icon={<Library size={16} />} text="Collection" />
             <NavLink to="/battle" icon={<Swords size={16} />} text="Battle" />
             <NavLink to="/story" icon={<MapIcon size={16} />} text="Story" />
             <NavLink to="/settings" icon={<Settings size={16} />} text="Settings" />
@@ -291,6 +296,7 @@ export default function App() {
                 }
               />
               <Route path="/roster" element={<Roster inventory={inventory} team={team} toggleTeam={toggleTeam} />} />
+              <Route path="/collection" element={<Collection inventory={inventory} />} />
               <Route
                 path="/battle"
                 element={
@@ -313,6 +319,7 @@ export default function App() {
                 path="/settings"
                 element={<SettingsPage inventory={inventory} team={team} nodeId={nodeId} bannerId={bannerId} currency={currency} setInventory={setInventory} setTeam={setTeam} setNodeId={setNodeId} setBannerId={setBannerId} setCurrency={setCurrency} />}
               />
+              <Route path="*" element={<HomePage />} />
             </Routes>
           </AnimatePresence>
         </main>
@@ -332,14 +339,14 @@ function HomePage() {
       </CardHeader>
       <CardContent className="space-y-3 text-sm opacity-90">
         <p>
-          Arcana Bonds is a personal gacha RPG project featuring deep combat, summons,
-          and branching story maps. Latest build includes real portraits, video ultimates,
-          and persistent data saves.
+          Arcana Bonds is a gacha RPG project featuring deep combat, summons,
+          and branching story maps. Latest build adds improved gates, rewards,
+          and collection tracking.
         </p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>Summon through banners with pity system.</li>
-          <li>Build your team of 3 and battle dynamic enemies.</li>
-          <li>Explore the world through a story map with choices and loot nodes.</li>
+          <li>Summon through themed gates with pity system.</li>
+          <li>Earn 💎 from battles and story nodes.</li>
+          <li>View owned and missing units in Collection.</li>
         </ul>
       </CardContent>
     </Card>
@@ -354,35 +361,22 @@ function SettingsPage({ inventory, team, nodeId, bannerId, currency, setInventor
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex gap-2 flex-wrap">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              localStorage.clear();
-              window.location.reload();
-            }}
-          >
+          <Button variant="secondary" onClick={() => { localStorage.clear(); window.location.reload(); }}>
             Clear Save
           </Button>
-          <Button
-            onClick={() => {
-              save("backup", { inventory, team, nodeId, bannerId, currency });
-              alert("Saved backup to localStorage (key: ab_backup)");
-            }}
-          >
+          <Button onClick={() => { save("backup", { inventory, team, nodeId, bannerId, currency }); alert("Saved backup to localStorage (key: ab_backup)"); }}>
             Backup Save
           </Button>
-          <Button
-            onClick={() => {
-              const b = load("backup");
-              if (b) {
-                setInventory(b.inventory || []);
-                setTeam(b.team || []);
-                setNodeId(b.nodeId || "start");
-                setBannerId(b.bannerId || "standard");
-                setCurrency(b.currency || 0);
-              }
-            }}
-          >
+          <Button onClick={() => {
+            const b = load("backup");
+            if (b) {
+              setInventory(b.inventory || []);
+              setTeam(b.team || []);
+              setNodeId(b.nodeId || "start");
+              setBannerId(b.bannerId || "standard");
+              setCurrency(b.currency || 0);
+            }
+          }}>
             Restore Backup
           </Button>
         </div>

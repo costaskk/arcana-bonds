@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button, Card, CardHeader, CardTitle, CardContent } from "../ui-fallbacks.jsx";
 import { BANNERS, RarityWeightsBase } from "../game/data";
+import { useNavigate } from "react-router-dom";
 
-// Utility
 const rarityGlow = (r) =>
-  (RarityWeightsBase.find((w) => w.r === r) || {}).glow ||
-  "from-slate-300 via-slate-200 to-slate-100";
+  (RarityWeightsBase.find((w) => w.r === r) || {}).glow || "from-slate-300 via-slate-200 to-slate-100";
 
 export default function SummonGate({
   currency,
@@ -14,48 +13,52 @@ export default function SummonGate({
   bannerId,
   setBannerId,
   onSummon,
-  lastPulls,
+  lastPulls = [],
 }) {
+  const navigate = useNavigate();
   const [results, setResults] = useState([]);
   const [revealed, setRevealed] = useState(false);
   const [summoning, setSummoning] = useState(false);
+  const [earned, setEarned] = useState(false);
 
-  const banners = BANNERS;
-  const activeBanner = banners.find((b) => b.id === bannerId) || banners[0];
+  const activeBanner = BANNERS.find((b) => b.id === bannerId) || BANNERS[0];
+
+  // daily bonus
+  useEffect(() => {
+    const key = "ab_daily";
+    const today = new Date().toDateString();
+    const last = localStorage.getItem(key);
+    if (last !== today) {
+      setCurrency((c) => c + 150);
+      localStorage.setItem(key, today);
+    }
+  }, [setCurrency]);
 
   async function doSummon() {
-    if (currency < 100 || summoning) return;
+    if (summoning) return;
+    if (currency < 100) {
+      alert("Not enough 💎 to summon. Earn more by exploring Story or winning Battles.");
+      navigate("/story");
+      return;
+    }
     setSummoning(true);
     setRevealed(false);
     setResults([]);
-    // cinematic flash
-    await new Promise((r) => setTimeout(r, 800));
+
+    await new Promise((r) => setTimeout(r, 550)); // portal flash
     const pulls = await onSummon();
+    if (!pulls) { setSummoning(false); return; }
     setResults(pulls);
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 700));
     setRevealed(true);
     setSummoning(false);
   }
 
-  // Handle earning currency (simple demo system)
-  const [earned, setEarned] = useState(false);
-  function earnCurrency() {
+  function exploreEarn() {
     if (earned) return;
     setCurrency((c) => c + 100);
     setEarned(true);
-    alert("You earned 100 💎 for exploring the world!");
   }
-
-  useEffect(() => {
-    const dailyKey = "arcana_daily";
-    const last = localStorage.getItem(dailyKey);
-    const today = new Date().toDateString();
-    if (last !== today) {
-      setCurrency((c) => c + 150);
-      localStorage.setItem(dailyKey, today);
-      alert("Daily login bonus: +150 💎");
-    }
-  }, []);
 
   return (
     <Card className="overflow-hidden">
@@ -65,100 +68,99 @@ export default function SummonGate({
           <span className="text-xs opacity-80">💎 {currency}</span>
         </CardTitle>
       </CardHeader>
-
       <CardContent>
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          {/* Gate Visual */}
+        <div className="grid md:grid-cols-[1.4fr_1fr] gap-4">
+          {/* GATE VISUAL */}
           <motion.div
-            className="flex-1 relative rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700"
-            initial={{ opacity: 0, scale: 0.9 }}
+            className="relative rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 min-h-56 md:min-h-64"
+            initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
           >
             <img
               src={`/portraits/gate_${activeBanner.id}.png`}
-              alt="Summon Gate"
-              className="w-full h-64 object-cover"
+              alt={`${activeBanner.name} Gate`}
+              className="w-full h-full object-cover"
+              onError={(e) => (e.currentTarget.style.display = "none")}
             />
             {summoning && (
               <motion.div
-                className="absolute inset-0 flex items-center justify-center bg-fuchsia-500/40 backdrop-blur-sm"
+                className="absolute inset-0 bg-gradient-to-br from-fuchsia-600/50 via-indigo-600/40 to-emerald-600/50 flex items-center justify-center backdrop-blur-sm"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
               >
                 <motion.div
-                  className="text-3xl font-bold text-white"
-                  animate={{ scale: [1, 1.3, 1] }}
-                  transition={{ repeat: Infinity, duration: 1 }}
+                  className="text-3xl font-black text-white drop-shadow"
+                  animate={{ scale: [1, 1.1, 1], rotate: [0, 1.5, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.1 }}
                 >
-                  Summoning...
+                  Opening Gate…
                 </motion.div>
               </motion.div>
             )}
           </motion.div>
 
-          {/* Banner select + summon button */}
-          <div className="flex flex-col justify-between gap-3 flex-1">
+          {/* CONTROLS */}
+          <div className="flex flex-col gap-3">
             <select
               value={bannerId}
               onChange={(e) => setBannerId(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-slate-600 bg-slate-900/70 text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
             >
-              {banners.map((b) => (
-                <option key={b.id} value={b.id}>
+              {BANNERS.map((b) => (
+                <option key={b.id} value={b.id} className="bg-slate-900 text-slate-100">
                   {b.name}
                 </option>
               ))}
             </select>
 
-            <Button
-              className="text-white bg-fuchsia-600 hover:bg-fuchsia-500 w-full"
-              onClick={doSummon}
-              disabled={summoning || currency < 100}
-            >
-              Summon (💎100)
+            <div className="text-xs opacity-80 -mt-1">{activeBanner.desc}</div>
+
+            <Button className="text-white bg-fuchsia-600 hover:bg-fuchsia-500" onClick={doSummon} disabled={summoning}>
+              Summon (💎 100)
             </Button>
 
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={earnCurrency}
-              disabled={earned}
-            >
+            <Button variant="secondary" onClick={exploreEarn} disabled={earned}>
               Explore World (+100 💎)
             </Button>
+
+            <div className="text-xs opacity-70">
+              Rates — {activeBanner.rates.map((r) => `${r.r}:${Math.round(r.p * 100)}%`).join(" • ")}
+            </div>
           </div>
         </div>
 
-        {/* Results */}
+        {/* RESULTS */}
         <AnimatePresence>
           {revealed && results.length > 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4"
+              exit={{ opacity: 0, y: -16 }}
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-5"
             >
               {results.map((u, i) => (
                 <motion.div
                   key={u.rollId}
-                  className="relative p-3 rounded-xl border bg-white/70 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 shadow-sm"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
+                  className="relative p-3 rounded-xl border bg-slate-50/70 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: i * 0.05 }}
                 >
-                  <div
-                    className={`h-1 rounded-full bg-gradient-to-r ${rarityGlow(u.rarity)}`}
-                  />
-                  <motion.img
-                    src={`/portraits/${u.id}.png`}
-                    alt={u.name}
-                    className="w-full h-32 object-contain mt-2"
-                    whileHover={{ scale: 1.1 }}
-                  />
-                  <div className="mt-2 font-semibold text-center">{u.name}</div>
-                  <div className="text-xs opacity-70 text-center">{u.rarity}-Rank</div>
-                  <div className="text-center text-2xl mt-1">{u.emoji}</div>
+                  <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${rarityGlow(u.rarity)}`} />
+                  <div className="flex items-center justify-between">
+                    <div className="font-semibold">{u.name}</div>
+                    <div className="text-xs opacity-70">{u.rarity}</div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-center">
+                    <img
+                      src={`/portraits/${u.id}.png`}
+                      alt={u.name}
+                      className="w-24 h-24 object-contain drop-shadow"
+                      onError={(e) => (e.currentTarget.style.display = "none")}
+                    />
+                  </div>
+                  <div className="text-2xl text-center mt-1">{u.emoji}</div>
+                  <div className="text-[11px] opacity-70 text-center">{u.lore}</div>
                 </motion.div>
               ))}
             </motion.div>
