@@ -1,0 +1,2 @@
+export const save = (k, v) => localStorage.setItem("ab_"+k, JSON.stringify(v));
+export const load = (k, d) => { try{ const v = JSON.parse(localStorage.getItem("ab_"+k)); return v ?? d; } catch { return d; } };

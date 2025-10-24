@@ -1,0 +1,16 @@
+{
+  "units": [
+    "ignis-ronin",
+    "tidal-warden",
+    "gale-duelist",
+    "terra-sentinel",
+    "arc-oracle",
+    "ember-ravager",
+    "brine-slinger",
+    "cyclone-monk",
+    "bastion-golem",
+    "quantum-scribe"
+  ],
+  "requirePortrait": true,
+  "requireClips": ["idle", "attack", "ult"]
+}
