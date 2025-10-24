@@ -1,13 +1,6 @@
 import React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-/**
- * Cinematic overlay with optional children (e.g., an <AnimatedClip /> for ults).
- * Usage:
- * <Cinematic show title="Crimson Zenith" subtitle="Ignis Ronin unleashes an Ultimate!">
- *   <AnimatedClip id="ignis-ronin" type="ult" width={420} height={420} />
- * </Cinematic>
- */
 export default function Cinematic({ show, title, subtitle, children }) {
   return (
     <AnimatePresence>
@@ -24,9 +17,7 @@ export default function Cinematic({ show, title, subtitle, children }) {
             transition={{ duration: 0.9 }}
             className="text-center px-4"
           >
-            {children ? (
-              <div className="mb-3 flex items-center justify-center pointer-events-none">{children}</div>
-            ) : null}
+            {children ? <div className="mb-3 flex items-center justify-center">{children}</div> : null}
             <div className="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-300 via-yellow-200 to-cyan-300 drop-shadow">
               {title}
             </div>

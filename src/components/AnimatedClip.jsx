@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 
-// Plays /public/anims/<id>_<type>.webm if it exists.
-// type: "idle" | "attack" | "ult"
-export default function AnimatedClip({ id, type="idle", width=240, height=240, className="" }) {
+export default function AnimatedClip({ id, type = "idle", width = 240, height = 240, className = "", poster }) {
+  const [errored, setErrored] = useState(false);
   const src = `/anims/${id}_${type}.webm`;
+  if (errored) return null; // hide cleanly
+
   return (
     <video
       className={className}
@@ -14,7 +15,8 @@ export default function AnimatedClip({ id, type="idle", width=240, height=240, c
       loop
       muted
       playsInline
-      onError={(e) => { e.currentTarget.style.display = "none"; }} // hide if missing
+      poster={poster}
+      onError={() => setErrored(true)}
       style={{ filter: "drop-shadow(0 6px 18px rgba(0,0,0,0.45))", borderRadius: 16 }}
     />
   );
